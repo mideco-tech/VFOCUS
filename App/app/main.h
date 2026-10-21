@@ -1,3 +1,4 @@
+// Modified for VFOCUS: configurable MENU short/long actions and menu-access guard.
 /* Copyright 2023 Dual Tachyon
  * https://github.com/DualTachyon
  *
@@ -21,6 +22,7 @@
 
 void MAIN_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld);
 void channelMoveSwitch(void);
+void MAIN_OpenMenu(void);
 
 #endif
 

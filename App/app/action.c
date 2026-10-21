@@ -1,3 +1,4 @@
+// Modified for VFOCUS: configurable MENU short/long actions and menu-access guard.
 /* Copyright 2023 Dual Tachyon
  * https://github.com/DualTachyon
  *
@@ -21,6 +22,7 @@
 #include "app/app.h"
 #include "app/chFrScanner.h"
 #include "app/common.h"
+#include "app/main.h"
 #include "app/dtmf.h"
 #ifdef ENABLE_FLASHLIGHT
     #include "app/flashlight.h"
@@ -83,6 +85,7 @@ void (*const action_opt_table[ACTION_OPT_LEN])(void) = {
     [ACTION_OPT_SCAN] = &ACTION_ScanRestart,
     [ACTION_OPT_KEYLOCK] = &COMMON_KeypadLockToggle,
     [ACTION_OPT_A_B] = &COMMON_SwitchVFOs,
+    [ACTION_OPT_MENU] = &MAIN_OpenMenu,
     [ACTION_OPT_VFO_MR] = &COMMON_SwitchVFOMode,
     [ACTION_OPT_SWITCH_DEMODUL] = &ACTION_SwitchDemodul,
 
@@ -146,6 +149,7 @@ static_assert(ACTION_OPT_REMOVE_OFFSET == 21);
 static_assert(ACTION_OPT_FOXHUNT == 22);
 static_assert(ACTION_OPT_BEACON == 23);
 static_assert(ACTION_OPT_TONECALL == 24);
+static_assert(ACTION_OPT_MENU == 25);
 
 bool ACTION_IsAvailable(uint8_t action)
 {
@@ -482,6 +486,9 @@ void ACTION_Handle(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 
     enum ACTION_OPT_t func = ACTION_OPT_NONE;
     switch(Key) {
+        case KEY_MENU:
+            func = bKeyHeld ? gEeprom.KEY_M_LONG_PRESS_ACTION : gEeprom.KEY_M_SHORT_PRESS_ACTION;
+            break;
         case KEY_SIDE1:
             if (bKeyHeld)
                 func = gEeprom.KEY_1_LONG_PRESS_ACTION;
@@ -493,10 +500,6 @@ void ACTION_Handle(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
                 func = gEeprom.KEY_2_LONG_PRESS_ACTION;
             else
                 func = gEeprom.KEY_2_SHORT_PRESS_ACTION;
-            break;
-        case KEY_MENU:
-            if (bKeyHeld)
-                func = gEeprom.KEY_M_LONG_PRESS_ACTION;
             break;
         default:
             break;

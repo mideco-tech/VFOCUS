@@ -1,3 +1,4 @@
+// Modified for VFOCUS: configurable MENU short/long actions and menu-access guard.
 /* Copyright 2026
  *
  * Licensed under the Apache License, Version 2.0.
@@ -153,7 +154,8 @@ bool RXTX_LOG_IsEnabled(void)
            gEeprom.KEY_1_LONG_PRESS_ACTION  == ACTION_OPT_RXTX_LOG ||
            gEeprom.KEY_2_SHORT_PRESS_ACTION == ACTION_OPT_RXTX_LOG ||
            gEeprom.KEY_2_LONG_PRESS_ACTION  == ACTION_OPT_RXTX_LOG ||
-           gEeprom.KEY_M_LONG_PRESS_ACTION  == ACTION_OPT_RXTX_LOG;
+           gEeprom.KEY_M_SHORT_PRESS_ACTION == ACTION_OPT_RXTX_LOG ||
+           gEeprom.KEY_M_LONG_PRESS_ACTION == ACTION_OPT_RXTX_LOG;
 }
 
 static void RXTX_LOG_ResetActiveSession(void)

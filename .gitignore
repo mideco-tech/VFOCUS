@@ -13,6 +13,7 @@ compile_commands.json
 /docs/*
 !/docs/README.md
 !/docs/F4HWN.md
+!/docs/MENU-KEYS.md
 k5_eeprom.raw
 
 /build

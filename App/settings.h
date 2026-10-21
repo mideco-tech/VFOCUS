@@ -1,3 +1,4 @@
+// Modified for VFOCUS: configurable MENU short/long actions and menu-access guard.
 /* Copyright 2023 Dual Tachyon
  * https://github.com/DualTachyon
  *
@@ -136,7 +137,8 @@ enum ACTION_OPT_t {
     ACTION_OPT_BEACON         = 23,
     ACTION_OPT_TONECALL       = 24,
 
-    ACTION_OPT_LEN            = 25
+    ACTION_OPT_MENU           = 25,
+    ACTION_OPT_LEN            = 26
 };
 
 #ifdef ENABLE_VOICE
@@ -299,6 +301,7 @@ typedef struct {
     uint8_t               S0_LEVEL;
     uint8_t               S9_LEVEL;
 #endif
+    uint8_t               KEY_M_SHORT_PRESS_ACTION;
 } EEPROM_Config_t;
 
 extern EEPROM_Config_t gEeprom;
@@ -342,6 +345,10 @@ void     SETTINGS_FactoryReset(bool bIsAll);
 void SETTINGS_SaveVfoIndices(void);
 void SETTINGS_SaveVfoIndicesFlush(void);
 void SETTINGS_SaveSettings(void);
+void SETTINGS_NormalizeMenuActions(void);
+void SETTINGS_SetMenuAction(bool isLong, uint8_t action);
+bool SETTINGS_DecodeMenuActions(uint8_t packedLong, const uint8_t *state);
+void SETTINGS_EncodeMenuActions(uint8_t *packedLong, uint8_t *state);
 void SETTINGS_SaveChannelName(uint16_t channel, const char * name);
 void SETTINGS_SaveChannel(uint16_t Channel, uint8_t VFO, const VFO_Info_t *pVFO, uint8_t Mode);
 void SETTINGS_SaveBatteryCalibration(const uint16_t * batteryCalibration);

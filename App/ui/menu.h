@@ -1,3 +1,4 @@
+// Modified for VFOCUS: configurable MENU short/long actions and menu-access guard.
 /* Copyright 2023 Dual Tachyon
  * https://github.com/DualTachyon
  *
@@ -162,8 +163,9 @@ enum
     MENU_MLONG,
     MENU_BATTYP,
 #if defined(ENABLE_FEAT_F4HWN) && defined(ENABLE_FEAT_F4HWN_LOGO_SAV)
-    MENU_SET_SAV
+    MENU_SET_SAV,
 #endif
+    MENU_MSHORT
 };
 
 #ifdef ENABLE_FEAT_F4HWN_MENU_CAT

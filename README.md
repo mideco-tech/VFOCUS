@@ -14,13 +14,18 @@ project, and its authorship and acknowledgements remain part of VFOCUS.
 
 ## Project status
 
-VFOCUS is in early development. This repository currently contains the inherited
-F4HWN implementation. The UX/UI redesign described below is planned work, and
-there are no published VFOCUS firmware releases yet.
+**[v0.1.0 Labs](https://github.com/mideco-tech/VFOCUS/releases/tag/v0.1.0)** is the
+first experimental VFOCUS release, based on F4HWN v6.2.0. It adds configurable
+**M Shrt / M Long** controls: short MENU switches A/B, long MENU opens settings,
+and the assignment guard keeps at least one MENU action available.
+
+See the [MENU controls guide](docs/MENU-KEYS.md) and [changelog](CHANGELOG.md).
+The broader UX/UI redesign below remains planned work.
 
 The existing files in [`archive/`](archive/) are inherited upstream artifacts,
 including F4HWN and stock firmware. They are not VFOCUS release builds.
-Build presets and output filenames currently retain the F4HWN names.
+Inherited build presets retain the F4HWN names. The VFOCUS release script builds
+Labs with its own artifact name and edition label.
 
 ## Where we are heading
 
@@ -35,6 +40,7 @@ build preset. See the [F4HWN reference](docs/F4HWN.md) for the inherited feature
 ## Documentation
 
 - [Documentation index](docs/README.md)
+- [VFOCUS MENU controls and migration](docs/MENU-KEYS.md)
 - [Detailed F4HWN reference](docs/F4HWN.md): features, editions, scanning and controls.
 - [Build from source](docs/F4HWN.md#compiling-and-building-from-docker)
 - [Flash a local build with UV Studio](docs/F4HWN.md#flashing-the-firmware-with-uv-studio)
@@ -46,22 +52,24 @@ technical guidance. VFOCUS-specific changes will be documented as they are intro
 
 ## Build
 
-With Docker running and a Bash shell available, clone the repository and build
-from its root directory:
+To build the VFOCUS Labs release, use Bash, CMake, Ninja, Python 3 and Arm GNU
+Toolchain 13.3.Rel1 on `PATH`. Run from the repository root:
 
 ```bash
 git clone https://github.com/mideco-tech/VFOCUS.git
 cd VFOCUS
+bash tools/build_vfocus.sh
+```
+
+The release outputs go to `build/VFOCUS-Labs/`. See the
+[release build and tests](docs/MENU-KEYS.md#building-and-testing) for details.
+The inherited Docker build remains available for other presets:
+
+```bash
 ./compile-firmware.sh Fusion
 ```
 
-`Fusion` is the default general-purpose preset. To build the experimental Labs edition:
-
-```bash
-./compile-firmware.sh Labs
-```
-
-The build produces `.bin`, `.elf` and `.hex` files in `build/<Preset>/`.
+The Docker build produces `.bin`, `.elf` and `.hex` files in `build/<Preset>/`.
 See the [build reference](docs/F4HWN.md#compiling-and-building-from-docker) for other
 presets and CMake options.
 
@@ -79,7 +87,9 @@ F4HWN releases installs upstream F4HWN firmware.
 
 For CHIRP, use a driver that matches the installed firmware. Drivers supplied with
 [upstream F4HWN releases](https://github.com/armel/uv-k1-k5v3-firmware-custom/releases)
-belong to those releases. Check compatibility before using one with a VFOCUS build.
+belong to those releases. They do not support the new MENU bindings and may
+reset them when uploading settings. Configure MENU on the radio and check the
+[CHIRP limitation](docs/MENU-KEYS.md#chirp-limitation) before using an upstream driver.
 
 ## Credits and license
 

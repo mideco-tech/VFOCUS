@@ -1,3 +1,4 @@
+// Modified for VFOCUS: configurable MENU short/long actions and menu-access guard.
 /* Copyright 2023 Dual Tachyon
  * https://github.com/DualTachyon
  *
@@ -2595,7 +2596,7 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
         // locked: this block is also entered for the low battery popup, where
         // action keys must keep working as before
         const bool passActionKey = ((gSetting_set_lck & SET_LCK_ACTIONS) == 0 || !gEeprom.KEY_LOCK) &&
-                                   (Key == KEY_SIDE1 || Key == KEY_SIDE2 || (Key == KEY_MENU && bKeyHeld));
+                                   (Key == KEY_SIDE1 || Key == KEY_SIDE2);
 
         if (Key == KEY_F) { // function/key-lock key
             if (!bKeyPressed)
@@ -2608,13 +2609,9 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
                 return;
             }
         }
-        // KEY_MENU has a special treatment here, because we want to pass hold event to ACTION_Handle
-        // but we don't want it to complain when initial press happens
-        // we want to react on realese instead
         else if (!passActionKey)
         {
-            if ((!bKeyPressed || bKeyHeld || (Key == KEY_MENU && bKeyPressed)) && // prevent released or held, prevent KEY_MENU pressed
-                !(Key == KEY_MENU && !bKeyPressed))  // pass KEY_MENU released
+            if (!bKeyPressed || bKeyHeld)
                 return;
 
             // keypad is locked, tell the user

@@ -1,3 +1,4 @@
+// Modified for VFOCUS: configurable MENU short/long actions and menu-access guard.
 /* Copyright 2023 Dual Tachyon
  * https://github.com/DualTachyon
  *
@@ -768,106 +769,59 @@ static void MAIN_Key_EXIT(bool bKeyPressed, bool bKeyHeld)
     return;
 }
 
+void MAIN_OpenMenu(void)
+{
+#ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
+    if (gEeprom.MENU_LOCK) {
+        HideFKeyIcon();
+        return;
+    }
+#endif
+    if (gScanStateDir != SCAN_OFF)
+        CHFRSCANNER_Stop();
+
+    HideFKeyIcon();
+    gInputBoxIndex = 0;
+    gKeyInputCountdown = 1;
+    gUpdateStatus = true;
+    gFlagRefreshSetting = true;
+    gScanMixEditorActive = false;
+    gRequestDisplayScreen = DISPLAY_MENU;
+#ifdef ENABLE_FEAT_F4HWN_MENU_CAT
+    gMenuLevel = MENU_LEVEL_CAT;
+    UI_MENU_BuildCategoryScreen();
+    gMenuCursor = (gMenuCatCursor < gMenuListCount) ? gMenuCatCursor : 0;
+#endif
+#ifdef ENABLE_VOICE
+    gAnotherVoiceID = VOICE_ID_MENU;
+#endif
+}
+
 static void MAIN_Key_MENU(bool bKeyPressed, bool bKeyHeld)
 {
-    if (bKeyPressed && !bKeyHeld) // menu key pressed
+    if (bKeyPressed && !bKeyHeld)
         gBeepToPlay = BEEP_1KHZ_60MS_OPTIONAL;
 
-    if (bKeyHeld) { // menu key held down (long press)
-        if (bKeyPressed) { // long press MENU key
+    // Execute once, on short release or the first long-press event.
+    // A held release may arrive after the action has changed the screen.
+    if (bKeyPressed != bKeyHeld || gDTMF_InputMode)
+        return;
 
-            #ifdef ENABLE_FEAT_F4HWN
-            // Exclude current scan entry
-            if(gScanStateDir != SCAN_OFF)
-            {
-                if(FUNCTION_IsRx() || gScanPauseDelayIn_10ms > 9)
-                {
-#ifdef ENABLE_SCAN_RANGES
-                    if(gScanRangeStart && !IS_MR_CHANNEL(gNextMrChannel))
-                    {
-                        if(CHFRSCANNER_ExcludeCurrentScanRange())
-                        {
-                            UI_MAIN_NotifyScanProgressDataChanged();
-                            lastFoundFrqOrChan = lastFoundFrqOrChanOld;
-                            CHFRSCANNER_ContinueScanning();
-                        }
-
-                        return;
-                    }
-#endif
-
-                    ChannelAttributes_t *att = MR_GetChannelAttributes(lastFoundFrqOrChan);
-                    att->exclude = true;
-
-                    MR_SaveChannelAttributesToFlash(lastFoundFrqOrChan, att);
-                    UI_MAIN_NotifyScanProgressDataChanged();
-
-                    gVfoConfigureMode = VFO_CONFIGURE;
-                    gFlagResetVfos    = true;
-
-                    lastFoundFrqOrChan = lastFoundFrqOrChanOld;
-
-                    CHFRSCANNER_ContinueScanning();
-                }
-
-                return;
-            }
-            #endif
-            
-            gWasFKeyPressed = false;
-
-            if (gScreenToDisplay == DISPLAY_MAIN) {
-                if (gInputBoxIndex > 0) { // delete any inputted chars
-                    gInputBoxIndex        = 0;
-                    gRequestDisplayScreen = DISPLAY_MAIN;
-                }
-
-                gUpdateStatus   = true;
-
-                ACTION_Handle(KEY_MENU, bKeyPressed, bKeyHeld);
-            }
-        }
-
+    gKeyInputCountdown = 1;
+    if (!bKeyHeld && gInputBoxIndex > 0) {
+        channelMoveSwitch();
+        gInputBoxIndex = 0;
+        gRequestDisplayScreen = DISPLAY_MAIN;
         return;
     }
 
-    if (!bKeyPressed && !gDTMF_InputMode) { // menu key released
-        gKeyInputCountdown = 1;
-        channelMoveSwitch();
-
-        const bool bFlag = !gInputBoxIndex;
-        gInputBoxIndex   = 0;
-
-        if (bFlag) {
-            if (gScanStateDir != SCAN_OFF) {
-                CHFRSCANNER_Stop();
-                return;
-            }
-
-            #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
-                if(gEeprom.MENU_LOCK == true) {
-                    HideFKeyIcon();
-
-                    return;
-                }
-            #endif
-
-            gFlagRefreshSetting = true;
-            gScanMixEditorActive = false;
-            gRequestDisplayScreen = DISPLAY_MENU;
-#ifdef ENABLE_FEAT_F4HWN_MENU_CAT
-            gMenuLevel  = MENU_LEVEL_CAT;
-            UI_MENU_BuildCategoryScreen();
-            gMenuCursor = (gMenuCatCursor < gMenuListCount) ? gMenuCatCursor : 0;
-#endif
-            #ifdef ENABLE_VOICE
-                gAnotherVoiceID   = VOICE_ID_MENU;
-            #endif
-        }
-        else {
-            gRequestDisplayScreen = DISPLAY_MAIN;
-        }
+    const uint8_t action = bKeyHeld ? gEeprom.KEY_M_LONG_PRESS_ACTION : gEeprom.KEY_M_SHORT_PRESS_ACTION;
+    if (action == ACTION_OPT_A_B) {
+        if (gScanStateDir != SCAN_OFF)
+            CHFRSCANNER_Stop();
+        gVfoConfigureMode = VFO_CONFIGURE;
     }
+    ACTION_Handle(KEY_MENU, bKeyPressed, bKeyHeld);
 }
 
 static void MAIN_Key_STAR(bool bKeyPressed, bool bKeyHeld)

@@ -1,3 +1,4 @@
+// Modified for VFOCUS: configurable MENU short/long actions and menu-access guard.
 /* Copyright 2023 Dual Tachyon
  * https://github.com/DualTachyon
  *
@@ -460,6 +461,7 @@ int MENU_GetLimits(uint8_t menu_id, int32_t *pMin, int32_t *pMax)
         case MENU_F2SHRT:
         case MENU_F2LONG:
         case MENU_MLONG:
+        case MENU_MSHORT:
             //*pMin = 0;
             *pMax = SIDEFUNCTION_COUNT - 1;
             break;
@@ -929,16 +931,19 @@ void MENU_AcceptSetting(void)
         case MENU_F1LONG:
         case MENU_F2SHRT:
         case MENU_F2LONG:
-        case MENU_MLONG:
             {
                 uint8_t * fun[]= {
                     &gEeprom.KEY_1_SHORT_PRESS_ACTION,
                     &gEeprom.KEY_1_LONG_PRESS_ACTION,
                     &gEeprom.KEY_2_SHORT_PRESS_ACTION,
-                    &gEeprom.KEY_2_LONG_PRESS_ACTION,
-                    &gEeprom.KEY_M_LONG_PRESS_ACTION};
+                    &gEeprom.KEY_2_LONG_PRESS_ACTION};
                 *fun[UI_MENU_GetCurrentMenuId()-MENU_F1SHRT] = gSubMenuSelection;
             }
+            break;
+
+        case MENU_MSHORT:
+        case MENU_MLONG:
+            SETTINGS_SetMenuAction(UI_MENU_GetCurrentMenuId() == MENU_MLONG, gSubMenuSelection);
             break;
 
 #ifdef ENABLE_FEAT_F4HWN
@@ -1299,19 +1304,23 @@ void MENU_ShowCurrentSetting(void)
         case MENU_F1LONG:
         case MENU_F2SHRT:
         case MENU_F2LONG:
-        case MENU_MLONG:
         {
             uint8_t * fun[]= {
                 &gEeprom.KEY_1_SHORT_PRESS_ACTION,
                 &gEeprom.KEY_1_LONG_PRESS_ACTION,
                 &gEeprom.KEY_2_SHORT_PRESS_ACTION,
-                &gEeprom.KEY_2_LONG_PRESS_ACTION,
-                &gEeprom.KEY_M_LONG_PRESS_ACTION};
+                &gEeprom.KEY_2_LONG_PRESS_ACTION};
             uint8_t id = *fun[UI_MENU_GetCurrentMenuId()-MENU_F1SHRT];
 
             gSubMenuSelection = id < ACTION_OPT_LEN ? id : ACTION_OPT_NONE;
             break;
         }
+
+        case MENU_MSHORT:
+        case MENU_MLONG:
+            gSubMenuSelection = UI_MENU_GetCurrentMenuId() == MENU_MLONG
+                ? gEeprom.KEY_M_LONG_PRESS_ACTION : gEeprom.KEY_M_SHORT_PRESS_ACTION;
+            break;
 
 #ifdef ENABLE_FEAT_F4HWN
         case MENU_SET_PWR:

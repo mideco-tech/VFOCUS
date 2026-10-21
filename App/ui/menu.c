@@ -1,3 +1,4 @@
+// Modified for VFOCUS: configurable MENU short/long actions and menu-access guard.
 /* Copyright 2023 Dual Tachyon
  * https://github.com/DualTachyon
  *
@@ -90,7 +91,8 @@ const t_menu_item MenuList[] =
     {"F1Long",      MENU_F1LONG        },
     {"F2Shrt",      MENU_F2SHRT        },
     {"F2Long",      MENU_F2LONG        },
-    {"M Long",      MENU_MLONG         },
+    {"M Shrt", MENU_MSHORT},
+    {"M Long", MENU_MLONG},
 
     {"KeyLck",      MENU_AUTOLK        }, // was "AUTOLk"
     {"TxTOut",      MENU_TOT           }, // was "TOT"
@@ -500,7 +502,8 @@ const char* const gSubMenu_SCRAMBLER[] =
     X(ACTION_OPT_REMOVE_OFFSET,  "REMOVE\nOFFSET") \
     X(ACTION_OPT_FOXHUNT,        "FOX HUNT") \
     X(ACTION_OPT_BEACON,         "BEACON") \
-    X(ACTION_OPT_TONECALL,       "TONE CALL")
+    X(ACTION_OPT_TONECALL,       "TONE CALL") \
+    X(ACTION_OPT_MENU,           "MENU")
 
 #define SIDEFUNCTION_NAME_ENTRY(action, name) [action] = name,
 const char *const gSubMenu_SIDEFUNCTIONS[ACTION_OPT_LEN] =
@@ -600,7 +603,7 @@ static const uint8_t CatScan[]    = {
 #endif
 };
 static const uint8_t CatKeys[]    = {
-    MENU_F1SHRT, MENU_F1LONG, MENU_F2SHRT, MENU_F2LONG, MENU_MLONG, MENU_AUTOLK, MENU_SET_LCK,
+    MENU_F1SHRT, MENU_F1LONG, MENU_F2SHRT, MENU_F2LONG, MENU_MSHORT, MENU_MLONG, MENU_AUTOLK, MENU_SET_LCK,
 #ifdef ENABLE_FEAT_F4HWN_RESCUE_OPS
     MENU_SET_KEY,
 #endif
@@ -1650,6 +1653,7 @@ void UI_DisplayMenu(void)
         case MENU_F2SHRT:
         case MENU_F2LONG:
         case MENU_MLONG:
+        case MENU_MSHORT:
         {
             const uint8_t action = gSubMenuSelection;
             strcpy(String, gSubMenu_SIDEFUNCTIONS[gSubMenuSelection]);

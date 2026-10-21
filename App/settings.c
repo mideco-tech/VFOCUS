@@ -1,3 +1,4 @@
+// Modified for VFOCUS: configurable MENU short/long actions and menu-access guard.
 /* Copyright 2025 muzkr https://github.com/muzkr
  * Copyright 2023 Dual Tachyon
  * https://github.com/DualTachyon
@@ -31,6 +32,54 @@
 #define SETTINGS_SCAN_MIX_ADDR 0x00A170u
 
 EEPROM_Config_t gEeprom = { 0 };
+
+// A0C5..A0C7 were unused in v6.2.0. Keep all existing action IDs and
+// settings addresses intact. The marker distinguishes legacy configurations.
+void SETTINGS_NormalizeMenuActions(void)
+{
+    if (gEeprom.KEY_M_SHORT_PRESS_ACTION >= ACTION_OPT_LEN)
+        gEeprom.KEY_M_SHORT_PRESS_ACTION = ACTION_OPT_A_B;
+    if (gEeprom.KEY_M_LONG_PRESS_ACTION >= ACTION_OPT_LEN)
+        gEeprom.KEY_M_LONG_PRESS_ACTION = ACTION_OPT_MENU;
+    if (gEeprom.KEY_M_SHORT_PRESS_ACTION != ACTION_OPT_MENU &&
+        gEeprom.KEY_M_LONG_PRESS_ACTION != ACTION_OPT_MENU)
+        gEeprom.KEY_M_LONG_PRESS_ACTION = ACTION_OPT_MENU;
+}
+
+void SETTINGS_SetMenuAction(bool isLong, uint8_t action)
+{
+    if (action >= ACTION_OPT_LEN)
+        return;
+    uint8_t *edited = isLong ? &gEeprom.KEY_M_LONG_PRESS_ACTION : &gEeprom.KEY_M_SHORT_PRESS_ACTION;
+    uint8_t *other = isLong ? &gEeprom.KEY_M_SHORT_PRESS_ACTION : &gEeprom.KEY_M_LONG_PRESS_ACTION;
+    *edited = action;
+    if (action != ACTION_OPT_MENU && *other != ACTION_OPT_MENU)
+        *other = ACTION_OPT_MENU;
+    SETTINGS_NormalizeMenuActions();
+}
+
+bool SETTINGS_DecodeMenuActions(uint8_t packedLong, const uint8_t *state)
+{
+    if (state[6] != 0x4D || state[7] != 0x31) {
+        gEeprom.KEY_M_SHORT_PRESS_ACTION = ACTION_OPT_A_B;
+        gEeprom.KEY_M_LONG_PRESS_ACTION = ACTION_OPT_MENU;
+        return true;
+    }
+    gEeprom.KEY_M_SHORT_PRESS_ACTION = state[5];
+    gEeprom.KEY_M_LONG_PRESS_ACTION = packedLong >> 1;
+    SETTINGS_NormalizeMenuActions();
+    return gEeprom.KEY_M_SHORT_PRESS_ACTION != state[5] ||
+           gEeprom.KEY_M_LONG_PRESS_ACTION != (packedLong >> 1);
+}
+
+void SETTINGS_EncodeMenuActions(uint8_t *packedLong, uint8_t *state)
+{
+    SETTINGS_NormalizeMenuActions();
+    *packedLong = (*packedLong & 1u) | (gEeprom.KEY_M_LONG_PRESS_ACTION << 1);
+    state[5] = gEeprom.KEY_M_SHORT_PRESS_ACTION;
+    state[6] = 0x4D;
+    state[7] = 0x31;
+}
 
 // Load a DTMF code from EEPROM, falling back to default_val if invalid.
 static void SETTINGS_LoadEepromDtmf(uint32_t addr, char *dest, size_t size, const char *default_val)
@@ -270,7 +319,7 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
     // 0E90..0E97
     PY25Q16_ReadBuffer(0x00A0A8, Data, 8);
     gEeprom.BEEP_CONTROL                 = Data[0] & 1;
-    gEeprom.KEY_M_LONG_PRESS_ACTION      = ((Data[0] >> 1) < ACTION_OPT_LEN) ? (Data[0] >> 1) : ACTION_OPT_NONE;
+    const uint8_t packedMenuLong = Data[0];
     gEeprom.KEY_1_SHORT_PRESS_ACTION     = (Data[1] < ACTION_OPT_LEN) ? Data[1] : ACTION_OPT_MONITOR;
     gEeprom.KEY_1_LONG_PRESS_ACTION      = (Data[2] < ACTION_OPT_LEN) ? Data[2] : ACTION_OPT_NONE;
     gEeprom.KEY_2_SHORT_PRESS_ACTION     = (Data[3] < ACTION_OPT_LEN) ? Data[3] : ACTION_OPT_SCAN;
@@ -308,6 +357,15 @@ gEeprom.FreqChannel[1]   = IS_FREQ_CHANNEL(Data16[5]) ? Data16[5] : (FREQ_CHANNE
     gEeprom.REPEATER_TAIL_TONE_ELIMINATION = (Data[2] < 11) ? Data[2] : 0;
     gEeprom.TX_VFO                         = (Data[3] <  2) ? Data[3] : 0;
     gEeprom.BATTERY_TYPE                   = (Data[4] < BATTERY_TYPE_UNKNOWN) ? Data[4] : BATTERY_TYPE_1600_MAH;
+
+    if (SETTINGS_DecodeMenuActions(packedMenuLong, Data)) {
+        uint8_t repairedLong = packedMenuLong;
+        SETTINGS_EncodeMenuActions(&repairedLong, Data);
+        // Write MENU access before committing the new marker. A power loss
+        // between these writes safely repeats migration on the next boot.
+        PY25Q16_WriteBuffer(0x00A0A8, &repairedLong, 1, false);
+        PY25Q16_WriteBuffer(0x00A0C5, &Data[5], 3, false);
+    }
 
     // 0ED0..0ED7
     PY25Q16_ReadBuffer(0x00A0A8 + 0x40, Data, 8);
@@ -1072,6 +1130,7 @@ void SETTINGS_SaveSettings(void)
     State[2] = gEeprom.REPEATER_TAIL_TONE_ELIMINATION;
     State[3] = gEeprom.TX_VFO;
     State[4] = gEeprom.BATTERY_TYPE;
+    SETTINGS_EncodeMenuActions(&SecBuf[0], State);
 
     // 0x0ED0
     State = SecBuf + 0x40;
