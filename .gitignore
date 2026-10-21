@@ -9,7 +9,10 @@ compile_commands.json
 .vscode
 .claude
 .agents
-/docs
+# Track public documentation while keeping other local notes ignored.
+/docs/*
+!/docs/README.md
+!/docs/F4HWN.md
 k5_eeprom.raw
 
 /build
